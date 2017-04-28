@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	  <meta charset="utf-8">
+	  <meta name="viewport" content="width=device-width">
+	  <title>trak-autofill.js - tests</title>
+		<style>
+			form,
+      #results {
+				position: relative;
+				float: left;
+				width: 100%;
+				height: auto;
+				background-color: white;
+				box-sizing: border-box;
+				border: 10px solid black;
+				margin-bottom: 30px;
+				padding: 10px;
+      }
+		</style>
+	</head>
+	<body>
+		<form action="http://httpbin.org/post" method="POST" onsubmit="return;" autocomplete="on">
+			<h2>Test Login Form:</h2>
+			<br>
+		  user: <input id="user" type="text" name="user"><br>
+		  password: <input id="password" type="password" name="password"><br>
+		  <input type="submit" value="Submit">
+		</form>
+		<br>
+		<br>
+    <form action="http://httpbin.org/post" method="POST" onsubmit="return;" autocomplete="on">
+			<h2>Test Form with misc. inputs</h2>
+			<br>
+		  Text-1: <input id="text-1" type="text" name="fname"><br>
+		  Text-2: <input id="text-2" type="text" name="lname"><br>
+	    Select: <select id="select">
+							  <option value="greece">Greece</option>
+							  <option value="france">France</option>
+							</select>
+							 <br>
+			Radios: <input type="radio" name="gender" value="male">Male</input>
+						  <input type="radio" name="gender" value="female">Female</input>
+						  <br>
+			Checkboxes: <input type="checkbox" name="vehicle" value="car">I have a car</input>
+							    <input type="checkbox" name="vehicle" value="bike">I have a bike</input>
+							    <br>
+		  <input type="submit" value="Submit">
+		</form>
+		<br>
+		<br>
+		<div id="results">
+			<h2>Results: </h2>
+			<br>
+			<ul></ul>
+    </div>
+		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+		<script src="src/track-autofill.js"></script>
+	  <script src="tests.js"></script>
+	</body>
+</html>
