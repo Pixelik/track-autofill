@@ -1,26 +1,27 @@
 (function() {
-  var debugging = /debugtrackautofilljs/i.test(window.location.href);
-  var autofillOnPageLoadTimeWindow = 1000;
-  var trackingAutofillGlobally = false;
-
+  var DEBUGGING = /debugtrackautofilljs/i.test(window.location.href);
+  var CHECK_DELAY = 1000;
   var ATTRS = {
     TRACK_AUTOFILL: 'data-track-autofill',
+    TRACKING_AUTOFILL: 'data-tracking-autofill',
     TRIGGERED_ON_PAGE_LOAD: 'data-track-autofill-change-triggered-on-page-load',
     ORIGINAL_VALUE: 'data-track-autofill-original-value',
     CHECKING: 'data-track-autofill-checking',
     ABORT: 'data-track-autofill-abort'
   };
 
-  var CHECK_DELAY = 1000;
+  var autofillOnPageLoadTimeWindow = 1000;
+  var trackingAutofillGlobally = false;
 
-  var debug = function(txt, obj) {
-    if (debugging) {
-      console.log('{ track-autofill.js debugging : }')
-      console.log(txt);
+  var debug = function(msg, obj) {
+    if (DEBUGGING) {
+      if (typeof msg !== "object") {
+        msg = '[ TRACK-AUTOFILL ] ' + msg; 
+      }
+      console.log(msg);
       if (obj) {
         console.log(obj);
       }
-      console.log('\n\n');
     }
   };
 
@@ -34,152 +35,176 @@
     }
   };
 
+  var isText = function($el) {
+    return !/radio|checkbox/.test($el.attr('type'));
+  };
+
   var oldValueOf = function($el) {
     var val = $el.attr(ATTRS.ORIGINAL_VALUE);
     if (typeof val !== typeof undefined && val !== false) {
       return val;
     }
-    return /text|password/.test($el.attr('type')) || $el.is('select') || $el.is('textarea') ? '' : 'false';
+    return isText($el) ? '' : 'false';
   };
 
   var newValueOf = function($el) {
-    if (/text|password/.test($el.attr('type')) || $el.is('select') || $el.is('textarea')) {
-      var val = $el.val();
-      if (typeof val !== 'string') {
-        return '';
-      }
-      return val;
+    if (isText($el)) {
+      return $el.val() + '';
     }
     return $el.is('checked') + '';
   };
 
   var checkAndTrigger = function($els, cb) {
     $els.each(function() {
-      var oldValue = oldValueOf($(this));
-      var newValue = newValueOf($(this));
+      debug('checking for autofill : ', $(this)[0]);
 
-      debug('[PLUGIN] checking:', $(this)[0]);
-      debug('[PLUGIN] old value = ' + oldValue);
-      debug('[PLUGIN] new value = ' + newValue);
+      var oldValue = oldValueOf($(this));
+      debug('old value = ' + oldValue);
+
+      var newValue = newValueOf($(this));
+      debug('new value = ' + newValue);
       
-      // if the value of this element hac changed..
+      // if the value of this element has changed..
       if (newValue !== oldValue) {
+        debug('should trigger change');
+
         var abort = $(this).attr(ATTRS.ABORT);
         abort = typeof abort !== typeof undefined && abort !== false;
-
+        
         // and if the browser hasn't already triggered a 'change' event as a result..
         if (!abort) {
-          debug('[PLUGIN] "change" will be triggered by plugin for:', $(this)[0]);
-
           // trigger a 'change' event
           $(this).attr(ATTRS.ORIGINAL_VALUE, newValue).trigger('change');
+          debug('change triggered by plugin');
         } else {
-          debug('[PLUGIN] will abort - "change" on element below already triggered by browser:', $(this)[0]);
+          debug('change already triggered by browser - will abort');
         }
 
         $(this).removeAttr(ATTRS.CHECKING).removeAttr(ATTRS.ABORT);
       } else {
-        debug('[PLUGIN] no autofill detected for:', $(this)[0]);
+        debug('value not changed - no autofill detected');
       }
     });
   };
   
-  // if a 'change' event is triggered by the browser..
-  document.onchange = function (e) {
 
-    // while the browser is autofilling after a new page load..
+
+
+
+
+  // if a "change" event is triggered on an element..
+  document.onchange = function (e) {
+    // while the browser is autofilling on page-load
     if (autofillOnPageLoadTimeWindow > 0) {
       var changed = e.target;
 
-      // mark that 'changed' input accordingly
+      debug('"change" triggered on page load by browser for: ', changed);
+
+      // mark that element accordingly
       changed.setAttribute(ATTRS.TRIGGERED_ON_PAGE_LOAD, true);
-      debug('[ON PAGE LOAD] browser triggered change for:', changed);
     }
   };
 
-  // as soon as the page loads..
+  // as soon as the page loads.. 
   document.addEventListener("DOMContentLoaded", function() {
-
-    // open up a time window allowing the browser some time to autofill
+    // create a time window allowing the browser some time to autofill
     setTimeout(function() {
       autofillOnPageLoadTimeWindow = 0;
-      debug('[ON PAGE LOAD] autofill time window = 0');
     }, autofillOnPageLoadTimeWindow);
   });
 
+
+
+
+
+
   $.fn.trackAutofill = function() {
-    var $this = this;
-    $this.attr(ATTRS.TRACK_AUTOFILL, true);
-    
-    waitForBrowserToAutofillOnPageLoad(function() {
-      var alreadyTriggeredOnPageLoad = $this.attr(ATTRS.TRIGGERED_ON_PAGE_LOAD);
-      alreadyTriggeredOnPageLoad = typeof alreadyTriggeredOnPageLoad !== typeof undefined && alreadyTriggeredOnPageLoad !== false;
+    this.each(function() {
+      var $this = $(this);
 
-      // if the browser did not trigger an autofill-change event for this element on page load..
-      if (!alreadyTriggeredOnPageLoad) {
-        debug('[PLUGIN] will check whether element below was autofilled on page load:', $this[0]);
-
-        // check whether this element was autofilled on page load and trigger a change event accordingly
-        checkAndTrigger($this);
+      // prevent same element from being tracked more than once
+      var alreadyBeingTracked = $(this).attr(ATTRS.TRACKING_AUTOFILL);
+      alreadyBeingTracked = typeof alreadyBeingTracked !== typeof undefined && alreadyBeingTracked !== false;
+      if (alreadyBeingTracked) {
+        return true;
       } else {
-        $this.attr(ATTRS.ORIGINAL_VALUE, newValueOf($this));
-        debug('[PLUGIN] change already triggered on page load for:', $this[0]);
+        $this.attr(ATTRS.TRACKING_AUTOFILL, true);
       }
       
-      // if a 'change' event is triggered on this element.. 
-      $this.on('change', function(e) {      
- 
-        // if this 'change' was triggered by the browser..
-        if (!e.isTrigger) {
-          var currentlyBeingChecked = $this.attr(ATTRS.CHECKING);
-          currentlyBeingChecked = typeof currentlyBeingChecked !== typeof undefined && currentlyBeingChecked !== false;
+      waitForBrowserToAutofillOnPageLoad(function() {
+        // if the browser did not trigger an autofill-change event for this element on page load
+        var alreadyTriggeredOnPageLoad = $this.attr(ATTRS.TRIGGERED_ON_PAGE_LOAD);
+        alreadyTriggeredOnPageLoad = typeof alreadyTriggeredOnPageLoad !== typeof undefined && alreadyTriggeredOnPageLoad !== false;
+        if (!alreadyTriggeredOnPageLoad) {
+          debug('will check whether autofilled on page load for:', $this[0]);
 
-          $this.attr(ATTRS.ORIGINAL_VALUE, newValueOf($this));
-          
-          // and if this element is currently being checked by the plugin..
-          if (currentlyBeingChecked) {
-            debug('[PLUGIN] change triggered by browser on element below while element was being checked by plugin:', $this[0]);
+          // check whether this element was autofilled on page load and trigger a change event accordingly
+          checkAndTrigger($this);
+        } else {
+          debug('autofilled on page load by browser:', $this[0]);
+          debug('with value = ' + autofilledValueOnPageLoad);
 
-            // abort the check
-            $this.attr(ATTRS.ABORT, true);
-          }
+          // otherwise store the value the element got on page-load
+          var autofilledValueOnPageLoad = newValueOf($this);
+          $this.attr(ATTRS.ORIGINAL_VALUE, autofilledValueOnPageLoad);
+        }
+        
+        /* initialize global autofill tracking only once 
+        regardless of how many times $.trackAutofill() is called */
+        if (!trackingAutofillGlobally) {
+          trackingAutofillGlobally = true;
+
+          // everytime an element on the page is changed
+          $(document).on('change', function(e) {
+            // and if the event is triggered by the browser
+            if (!e.isTrigger) {            
+              var $changed = $(e.target);
+              
+              // if the element is being tracked by the plugin
+              var tracked = $changed.attr(ATTRS.TRACKING_AUTOFILL);
+              tracked = typeof tracked !== typeof undefined && tracked !== false;
+              if (tracked) {
+                // store its new value
+                $changed.attr(ATTRS.ORIGINAL_VALUE, newValueOf($changed));
+
+                // and if this tracked element is currently being checked by the plugin
+                var currentlyBeingChecked = $changed.attr(ATTRS.CHECKING);
+                currentlyBeingChecked = typeof currentlyBeingChecked !== typeof undefined && currentlyBeingChecked !== false;
+                if (currentlyBeingChecked) {
+                  // abort the check so that the plugin doesn't trigger a 2nd change event for the same action
+                  $changed.attr(ATTRS.ABORT, true);
+                }
+              }
+
+              // check whether that element is part of a form that contains elements tracked by the plugin
+              var $tracked = $changed.closest('form').find('['+ATTRS.TRACKING_AUTOFILL+']').not($changed);
+              
+              // mark these elements as currently being checked
+              $tracked.attr(ATTRS.CHECKING, true);
+
+              // give some time to the browser to autofill those elements
+              delayedCheck = setTimeout(function() {
+                // then check whether any of those elements were indeed autofilled
+                checkAndTrigger($tracked);
+              }, CHECK_DELAY); 
+            }    
+          });
         }
       });
-
-      /** 
-      * initialize global autofill tracking only once 
-      * regardless of how many times $.trackAutofill() is called
-      */
-      if (!trackingAutofillGlobally) {
-        trackingAutofillGlobally = true;
-
-        // everytime an element on the page is changed..
-        $(document).on('change', function(e) {
-
-          // prevent 'focusout' event bubbling..
-          e.preventDefault();
-
-          // and if the event is NOT triggered by the browser..
-          if (e.isTrigger) {
-            return;
-          }
-
-          // check whether that element is part of a form that contains plugin-tracked elements..
-          var $blurred = $(e.target);
-          var $tracked = $blurred.closest('form').find('['+ATTRS.TRACK_AUTOFILL+']').not($blurred);
-          
-          // mark these elements as curretly being checked..
-          $tracked.attr(ATTRS.CHECKING, true);
-
-          // give some time to the browser to autofill those elements..
-          delayedCheck = setTimeout(function() {
-            debug('[GLOBAL] will check elements below for autofill:', $tracked);
-
-            // then check whether any of those elements were indeed autofilled
-            checkAndTrigger($tracked);
-          }, CHECK_DELAY);     
-        });
-      }
     });
+
+    return this;
   };
+
+
+
+
+
+  /*
+    auto-activate elements that exist in the DOM already 
+    and have been marked by the dev with the appropriate attribute
+  */
+  $(function() {
+    $('['+ATTRS.TRACK_AUTOFILL+']').trackAutofill();
+  });
 })();

@@ -1,61 +1,103 @@
 <!DOCTYPE html>
 <html>
-	<head>
-	  <meta charset="utf-8">
-	  <meta name="viewport" content="width=device-width">
-	  <title>trak-autofill.js - tests</title>
-		<style>
-			form,
-      #results {
-				position: relative;
-				float: left;
-				width: 100%;
-				height: auto;
-				background-color: white;
-				box-sizing: border-box;
-				border: 10px solid black;
-				margin-bottom: 30px;
-				padding: 10px;
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>trak-autofill.js - tests</title>
+    <style>
+      form,
+      #results,
+      #steps {
+      position: relative;
+      float: left;
+      width: 100%;
+      height: auto;
+      background-color: white;
+      box-sizing: border-box;
+      border: 10px solid blue;
+      padding: 10px;
       }
-		</style>
-	</head>
-	<body>
-		<form action="http://httpbin.org/post" method="POST" onsubmit="return;" autocomplete="on">
-			<h2>Test Login Form:</h2>
-			<br>
-		  user: <input id="user" type="text" name="user"><br>
-		  password: <input id="password" type="password" name="password"><br>
-		  <input type="submit" value="Submit">
-		</form>
-		<br>
-		<br>
-    <form action="http://httpbin.org/post" method="POST" onsubmit="return;" autocomplete="on">
-			<h2>Test Form with misc. inputs</h2>
-			<br>
-		  Text-1: <input id="text-1" type="text" name="fname"><br>
-		  Text-2: <input id="text-2" type="text" name="lname"><br>
-	    Select: <select id="select">
-							  <option value="greece">Greece</option>
-							  <option value="france">France</option>
-							</select>
-							 <br>
-			Radios: <input type="radio" name="gender" value="male">Male</input>
-						  <input type="radio" name="gender" value="female">Female</input>
-						  <br>
-			Checkboxes: <input type="checkbox" name="vehicle" value="car">I have a car</input>
-							    <input type="checkbox" name="vehicle" value="bike">I have a bike</input>
-							    <br>
-		  <input type="submit" value="Submit">
-		</form>
-		<br>
-		<br>
-		<div id="results">
-			<h2>Results: </h2>
-			<br>
-			<ul></ul>
+      form,
+      #results {
+      width: 50%;
+      }
+      form {
+      border-color: green;
+      }
+      #results {
+      border-color: purple;
+      }
+      #results ul .browser {
+      color: blue;
+      }
+      #results ul .plugin, strong {
+      color: red;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="steps">
+      <h2>Steps:</h2>
+      <ol>
+        <li>make sure "autocomplete forms" is on for your browser</li>
+        <li>fill out the user name with "user1" and the password with "pass1"</li>
+        <li>fill out a name and select a country</li>
+        <li>check out the Results</li>
+        <li>click on submit and choose to save password</li>
+        <li>click on the back button to return to this page</li>
+        <li>check out the Results</li>
+        <li>replace the user name with "user2" and the password with "pass2"</li>
+        <li>check out the Results</li>
+        <li>click on submit and choose to save password</li>
+        <li>click on the back button to return to this page</li>
+        <li>check out the Results</li>
+        <li>click on the user name and select "user1" from the dropdown</li>
+        <li>check out the Results</li>
+      </ol>
+      <strong>You might notice that, sometimes, even though the password field is auto-filled, the relevant event is not reported under the "Results" section. This is due to a bug in Chrome : even though the password appears to have been autofilled, the user must first interact with the page in any way in order to for the autofilled password value to become detectable. In that case, click on a blank part of the page. Then you should see the relevant "change" event for the password field being reported under "Results"</strong>
     </div>
-		<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
-		<script src="src/track-autofill.js?debugging"></script>
-	  <script src="tests.js"></script>
-	</body>
+    <form action="http://httpbin.org/post" method="POST" onsubmit="return;" autocomplete="on">
+      <h2>Test Form:</h2>
+      <br>
+      Username: <input autocomplete="on" id="user" type="text" name="user"><br><br>
+      Password: <input data-track-autofill autocomplete="on" id="password" type="password" name="password"><br><br>
+      Name: <input autocomplete="on" id="name" type="text" name="fname"><br><br>
+      Select: 
+      <select data-track-autofill id="select" name="countries">
+        <option value="">Select a country</option>
+        <option value="greece">Greece</option>
+        <option value="france">France</option>
+      </select>
+      <br>
+      <br>
+      <input type="submit" value="Submit">
+    </form>
+    <div id="results">
+      <h2>Results: </h2>
+      <i style="color: blue;">change events triggered by browser</i>
+      <br>
+      <i style="color: red;">autofill-change events triggered by plugin</i>
+      <br><br>
+      <ul></ul>
+    </div>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script src="src/track-autofill.js"></script>
+    <script>
+      (function(){
+      	var log = function($this, e) {
+      		var trigger = e.isTrigger ? 'plugin' : 'browser';
+      		var val = /radio|checkbox/.test($this.attr('type')) ? $this.is(':checked') + '' : $this.val();
+      		$('#results ul').append('<li class="'+trigger+'">"change" event on **'+$this.attr('id')+'** triggered by '+ trigger +' | new value = '+val+'</li>');
+      	};
+      
+      	$('[autocomplete="on"]').not('form').change(function(e) {
+      		log($(this), e);
+      	}).trackAutofill();
+      
+      	$('select').change(function(e) {
+      		log($(this), e);
+      	});
+      })();
+    </script>
+  </body>
 </html>
