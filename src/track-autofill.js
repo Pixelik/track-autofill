@@ -183,7 +183,7 @@
               $tracked.attr(ATTRS.CHECKING, true);
 
               // give some time to the browser to autofill those elements
-              delayedCheck = setTimeout(function() {
+              setTimeout(function() {
                 // then check whether any of those elements were indeed autofilled
                 checkAndTrigger($tracked);
               }, CHECK_DELAY); 
