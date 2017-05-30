@@ -51,7 +51,7 @@
     if (isText($el)) {
       return $el.val() + '';
     }
-    return $el.is('checked') + '';
+    return $el.is(':checked') + '';
   };
 
   var checkAndTrigger = function($els, cb) {
