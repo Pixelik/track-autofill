@@ -20,7 +20,7 @@ The plugin will check for an autofill as soon as the page loads as well as every
 Download and open up [tests.html](https://github.com/Pixelik/track-autofill/blob/master/tests.html) in your browser to test.
 
 ## Debugging
-Edit the script by setting `DEBUGGING` to `false` [here](https://github.com/Pixelik/track-autofill/blob/master/src/track-autofill.js#L2) and open up your browser console to start getting a detailed log. Make sure you set `DEBUGGING` to `true` in production.
+Edit the script by setting `var DEBUGGING` to `true` [here](https://github.com/Pixelik/track-autofill/blob/master/src/track-autofill.js#L2) and open up your browser console to start getting a detailed log. Make sure you set `var DEBUGGING` back to `false` before going into production.
 
 ## Chrome Bug
 Due to [a bug in Chrome](http://stackoverflow.com/questions/35049555/chrome-autofill-autocomplete-no-value-for-password), in some rare cases, a change in the value of an auto-filled password field is not immediately detectable unless the user interacts with the page in any way. In other words, even though the password field might get pre-filled by the browser, the plugin will not detect the change unless the user interacts with the page (by clicking anywhere on the page). As a result, tracking password-autofills will not work on Chrome in extremely rare occasions.
