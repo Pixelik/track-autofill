@@ -1,5 +1,5 @@
 (function() {
-  var DEBUGGING = /debugtrackautofilljs/i.test(window.location.href);
+  var DEBUGGING = false;
   var CHECK_DELAY = 1000;
   var ATTRS = {
     TRACK_AUTOFILL: 'data-track-autofill',
